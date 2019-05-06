@@ -9,6 +9,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+const { generateMessage, generateLocationMessage } = require('./utils/message');
+
 app.use(express.static(publicPath));
 
 io.on('connection', (socket) => {
@@ -16,14 +18,18 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => console.log(`User of id ${socket.id} is disconnected`));
 
-  socket.on('createMessage', (msg) => {
+  socket.emit('newMessage', generateMessage('Admin', 'Welcome to chat'));
+  socket.broadcast.emit('newMessage',generateMessage('Admin', 'New user joined'));
+
+  socket.on('createMessage', (msg, cb) => {
     console.log(msg);
-    io.emit('newMessage', {
-      from: msg.from,
-      text: msg.text,
-      createdAt: new Date().getTime()
-    });
-  })
+    io.emit('newMessage', generateMessage(msg.from, msg.text));
+    cb('This is from server');
+  });
+
+  socket.on('createGeoLocation', ({latitude, longitude}) => {
+    io.emit('newLocationMessage', generateLocationMessage('Admin', latitude, longitude));
+  });
 });
 
 
